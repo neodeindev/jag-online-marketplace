@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+/*
+ * JAG Marketplace design tokens
+ *
+ * Palette drawn from Guyana's Golden Arrowhead, used with restraint:
+ *   ink     rainforest green-black: header, footer, headings
+ *   canopy  green: links, success, focus, "in stock"
+ *   gold    the one action colour: add to cart, primary buttons
+ *   flag    red: sale prices, discount tags, urgent states
+ *   mist    the page background behind white product cards
+ */
+@theme {
+  --color-ink: #0e2a22;
+  --color-ink-800: #15372d;
+  --color-ink-700: #1e4a3d;
+  --color-ink-600: #2c5d4f;
+
+  --color-canopy: #127a55;
+  --color-canopy-700: #0c5a3f;
+  --color-canopy-600: #0f6848;
+  --color-canopy-100: #d3ece0;
+  --color-canopy-50: #e8f4ee;
+
+  --color-gold: #ffc21a;
+  --color-gold-500: #f5b400;
+  --color-gold-600: #e3a300;
+  --color-gold-100: #ffeaa8;
+  --color-gold-50: #fff7dc;
+
+  --color-flag: #d62839;
+  --color-flag-600: #b81f2f;
+  --color-flag-100: #f9ced3;
+  --color-flag-50: #fdedef;
+
+  --color-mist: #f2f5f3;
+  --color-line: #dce3df;
+  --color-line-strong: #c3cec9;
+  --color-text: #15231e;
+  --color-muted: #5b6b65;
+  --color-subtle: #8a9893;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(14 42 34 / 0.05), 0 6px 18px -6px rgb(14 42 34 / 0.12);
+  --shadow-pop: 0 18px 48px -12px rgb(14 42 34 / 0.32);
+
+  --animate-fade-in: fade-in 160ms ease-out;
+  --animate-slide-in-right: slide-in-right 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slide-in-left: slide-in-left 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-slide-up: slide-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes slide-up {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--color-mist);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-canopy);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-gold-100);
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  /* Wide, heavy Archivo for headlines and prices. */
+  .display {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 118;
+    letter-spacing: -0.012em;
+  }
+
+  .display-tight {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 104;
+    letter-spacing: -0.01em;
+  }
+
+  /* Gold over red: the flag's arrowhead borders, under the header. */
+  .flag-rule {
+    height: 5px;
+    background:
+      linear-gradient(to bottom, var(--color-gold) 0 3px, var(--color-flag) 3px 5px);
+  }
+
+  /*
+   * Discount tag shaped like an arrowhead pointing into the price.
+   * Red body with a gold tip, echoing the flag's layered triangles.
+   */
+  .arrow-tag {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 22px;
+    padding: 0 15px 0 7px;
+    background: var(--color-flag);
+    color: #fff;
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 110;
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+  }
+
+  .arrow-tag::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 12px;
+    background: var(--color-gold);
+    clip-path: polygon(0 0, 2px 0, 12px 50%, 2px 100%, 0 100%, 10px 50%);
+  }
+
+  .arrow-tag-lg {
+    height: 28px;
+    padding: 0 19px 0 10px;
+    font-size: 14px;
+    clip-path: polygon(0 0, calc(100% - 13px) 0, 100% 50%, calc(100% - 13px) 100%, 0 100%);
+  }
+
+  .arrow-tag-lg::after {
+    width: 15px;
+    clip-path: polygon(0 0, 2px 0, 15px 50%, 2px 100%, 0 100%, 13px 50%);
+  }
+
+  .card {
+    background: #fff;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .container-page {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+  @media (min-width: 768px) {
+    .container-page {
+      padding-inline: 24px;
+    }
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, #e9eeeb 0%, #f4f7f5 50%, #e9eeeb 100%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  @keyframes skeleton-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+
+  /* Long-form text: policy pages, product descriptions. */
+  .prose-store {
+    color: var(--color-text);
+    line-height: 1.7;
+    max-width: 72ch;
+  }
+  .prose-store > * + * {
+    margin-top: 0.9em;
+  }
+  .prose-store h2 {
+    font-family: var(--font-display);
+    font-variation-settings: "wdth" 110;
+    font-weight: 800;
+    font-size: 1.25rem;
+    margin-top: 1.8em;
+    color: var(--color-ink);
+  }
+  .prose-store h3 {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-top: 1.5em;
+    color: var(--color-ink);
+  }
+  .prose-store ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+  .prose-store ol {
+    list-style: decimal;
+    padding-left: 1.25rem;
+  }
+  .prose-store li + li {
+    margin-top: 0.35em;
+  }
+  .prose-store a {
+    color: var(--color-canopy);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-store strong {
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+  .prose-store table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
+  .prose-store th,
+  .prose-store td {
+    border: 1px solid var(--color-line);
+    padding: 0.5em 0.75em;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

@@ -1,16 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-// Demo accounts created by `npm run seed:demo` (see scripts/seed-demo.mjs).
-const OWNER_EMAIL = process.env.SEED_OWNER_EMAIL || "owner@jagmarket.test";
-const OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD || "JagDemo-2026!";
-
-async function signIn(page: Page, email: string, password: string, next = "/admin") {
-  await page.goto(`/login?next=${encodeURIComponent(next)}`);
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL((url) => url.pathname.startsWith(next));
-}
+import { expect, test } from "@playwright/test";
+import { DEMO_PASSWORD, OWNER_EMAIL, OWNER_PASSWORD, signIn } from "./helpers";
 
 test.describe("dashboard", () => {
   test("signed-out visitors are sent to sign in", async ({ page }) => {
@@ -19,7 +8,7 @@ test.describe("dashboard", () => {
   });
 
   test("customers can't open the dashboard", async ({ page }) => {
-    await signIn(page, "ann@jagmarket.test", "JagDemo-2026!", "/account");
+    await signIn(page, "ann@jagmarket.test", DEMO_PASSWORD, "/account");
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/account/);
   });

@@ -1,5 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Tests read the Supabase URL and demo account settings from the same files as the app.
+for (const file of [".env.local", ".env"]) {
+  try {
+    process.loadEnvFile(file);
+  } catch {
+    // The file is optional.
+  }
+}
+
 /**
  * End-to-end tests run against the demo store (see README → Local development):
  *   npm run seed:demo

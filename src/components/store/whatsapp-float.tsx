@@ -18,7 +18,7 @@ export function WhatsAppFloat() {
       target="_blank"
       rel="noreferrer"
       aria-label="Chat with us on WhatsApp"
-      className="no-print fixed bottom-20 right-4 z-30 inline-flex size-13 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_24px_-6px_rgb(0_0_0/0.35)] transition hover:scale-105 md:bottom-6 md:right-6"
+      className="no-print fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex size-13 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_24px_-6px_rgb(0_0_0/0.35)] transition hover:scale-105 md:bottom-6 md:right-6"
     >
       <WhatsAppIcon className="size-7" />
     </a>

@@ -1,14 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-/** Opens the first product without size/colour choices from a listing. */
-async function openSimpleProduct(page: Page, listing = "/c/kitchen") {
-  await page.goto(listing);
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  const quickAdd = page.getByRole("button", { name: /^Add .* to cart$/ }).first();
-  const card = quickAdd.locator("xpath=ancestor::article[1]");
-  await card.getByRole("heading").getByRole("link").click();
-  await expect(page.getByRole("button", { name: "Add to cart" }).first()).toBeVisible();
-}
+import { expect, test } from "@playwright/test";
+import { placeGuestOrder } from "./helpers";
 
 test.describe("storefront", () => {
   test("homepage shows banners, categories and deals", async ({ page }) => {
@@ -21,7 +12,7 @@ test.describe("storefront", () => {
 
   test("search tolerates typos and filters update the URL", async ({ page }) => {
     await page.goto("/search?q=iphnoe");
-    await expect(page.getByText(/similar spellings/)).toBeVisible();
+    await expect(page.getByRole("main").getByText(/similar spellings/)).toBeVisible();
     await expect(page.locator("article").first()).toContainText(/iphone/i);
 
     await page.goto("/search?q=phone");
@@ -52,25 +43,7 @@ test.describe("storefront", () => {
   });
 
   test("guest checkout with cash on delivery", async ({ page }) => {
-    await openSimpleProduct(page);
-    await page.getByRole("button", { name: "Add to cart" }).first().click();
-    await expect(page.getByRole("dialog")).toContainText("Your cart (1)");
-    await page.getByRole("dialog").getByRole("link", { name: "Checkout" }).click();
-
-    await expect(page.getByRole("heading", { name: "Checkout" })).toBeVisible();
-    await page.getByLabel("Full name").fill("Test Shopper");
-    // A fresh number each run: checkout allows only a few pending orders per phone per hour.
-    const phone = `+592 6${String(Date.now()).slice(-6)}`;
-    await page.getByLabel("Phone / WhatsApp").fill(phone);
-    await page.getByLabel("Email").fill("shopper@example.test");
-    await page.locator("#checkout-zoneId").getByText("Georgetown", { exact: true }).click();
-    await page.getByLabel("Street address").fill("1 Test Street");
-    await page.locator("#checkout-paymentMethod").getByText("Cash on delivery", { exact: true }).click();
-    await page.getByRole("button", { name: /Place order/ }).click();
-
-    await expect(page.getByRole("heading", { name: /Thank you, Test!/ })).toBeVisible({ timeout: 20_000 });
-    const orderNumber = (await page.locator("p.font-mono").first().innerText()).trim();
-    expect(orderNumber).toMatch(/^[A-Z]+-\d+$/);
+    const { orderNumber, phone } = await placeGuestOrder(page);
 
     // The guest can track it with the phone number used at checkout.
     await page.goto("/track-order");

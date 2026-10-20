@@ -267,7 +267,7 @@ export function StaffManager({ staff, currentUserId }: { staff: StaffMember[]; c
               <Field
                 label="Temporary password"
                 htmlFor="staff-password"
-                hint="They can change it after signing in, from Forgot password."
+                hint="They can change it after signing in, under Account → Profile & address."
                 error={fieldError("password")}
               >
                 <div className="flex gap-2">

@@ -52,6 +52,32 @@ export function subtreeIds<T extends CategoryLike>(categories: T[], rootId: stri
   return result;
 }
 
+/**
+ * The rows of a flattened tree that show when only the categories in `open`
+ * are expanded: a row shows when every category above it is open.
+ */
+export function visibleRows<T extends CategoryLike>(rows: FlatCategory<T>[], open: ReadonlySet<string>): FlatCategory<T>[] {
+  const out: FlatCategory<T>[] = [];
+  // Rows come parents-first, so a closed row hides the deeper rows that follow it.
+  let hideBelow = Infinity;
+  for (const row of rows) {
+    if (row.depth > hideBelow) continue;
+    out.push(row);
+    hideBelow = open.has(row.category.id) ? Infinity : row.depth;
+  }
+  return out;
+}
+
+/** The categories above this one, nearest first. */
+export function ancestorIds<T extends CategoryLike>(categories: T[], id: string): string[] {
+  const parentOf = new Map(categories.map((c) => [c.id, c.parent_id]));
+  const result: string[] = [];
+  for (let p = parentOf.get(id) ?? null; p && parentOf.has(p) && !result.includes(p); p = parentOf.get(p) ?? null) {
+    result.push(p);
+  }
+  return result;
+}
+
 /** Path labels by id, for showing a product's category. */
 export function categoryPathMap<T extends CategoryLike>(categories: T[], separator = " › "): Map<string, string> {
   const map = new Map<string, string>();

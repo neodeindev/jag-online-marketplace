@@ -214,7 +214,10 @@ export default async function AdminOrderPage(props: PageProps<"/admin/orders/[id
                       </span>
                     )}
                   </p>
-                  {e.note && <p className="mt-0.5 whitespace-pre-line text-[14px] text-text">{e.note}</p>}
+                  {/* place_order() records "Order placed" as the first note; don't repeat the status. */}
+                  {e.note && e.note !== (e.status && ORDER_STATUS_LABELS[e.status]) && (
+                    <p className="mt-0.5 whitespace-pre-line text-[14px] text-text">{e.note}</p>
+                  )}
                   <p className="mt-0.5 text-[12.5px] text-muted">
                     {formatDateTime(e.created_at, settings.timezone)}
                     {e.actor_name && ` · ${e.actor_name}`}

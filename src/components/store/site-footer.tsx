@@ -141,7 +141,8 @@ export async function SiteFooter() {
       </div>
 
       <div className="border-t border-white/10">
-        <div className="container-page flex flex-col gap-2 py-5 pb-24 text-[13px] text-white/55 sm:flex-row sm:justify-between md:pb-5">
+        {/* Bottom space on phones clears the tab bar or buy bar, plus the home-indicator area. */}
+        <div className="container-page flex flex-col gap-2 py-5 pb-[calc(6rem+env(safe-area-inset-bottom))] text-[13px] text-white/55 sm:flex-row sm:justify-between md:pb-5">
           <p>
             © {year} {settings.store_name}. Prices in Guyana dollars (GYD).
           </p>

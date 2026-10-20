@@ -1,13 +1,13 @@
 "use client";
 
-import { ArrowDown, ArrowUp, FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { deleteCategory, moveCategory, saveCategory } from "@/app/admin/categories/actions";
 import type { AdminCategory } from "@/lib/admin/catalog-admin";
-import { flattenCategories, subtreeIds } from "@/lib/admin/category-tree";
+import { ancestorIds, flattenCategories, subtreeIds, visibleRows } from "@/lib/admin/category-tree";
 import { cn, slugify } from "@/lib/utils";
 import { ConfirmButton } from "@/components/admin/confirm-button";
 import { Toggle } from "@/components/admin/toggle";
@@ -41,6 +41,66 @@ const emptyDraft = (parentId = ""): Draft => ({
   isFeatured: false,
 });
 
+// Which categories are expanded, remembered in this browser so the tree stays
+// as the owner left it. Falls back to memory when storage is unavailable.
+const OPEN_KEY = "jag-admin-open-categories";
+const NONE: string[] = [];
+let openRaw: string | null = null;
+let openIds: string[] = NONE;
+let memoryOnly = false;
+const openListeners = new Set<() => void>();
+
+function readOpen(): string[] {
+  if (memoryOnly) return openIds;
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(OPEN_KEY);
+  } catch {
+    memoryOnly = true;
+    return openIds;
+  }
+  if (raw !== openRaw) {
+    openRaw = raw;
+    try {
+      const value: unknown = JSON.parse(raw ?? "[]");
+      openIds = Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : NONE;
+    } catch {
+      openIds = NONE;
+    }
+  }
+  return openIds;
+}
+
+function writeOpen(ids: string[]) {
+  openIds = ids;
+  try {
+    openRaw = JSON.stringify(ids);
+    window.localStorage.setItem(OPEN_KEY, openRaw);
+  } catch {
+    memoryOnly = true;
+  }
+  for (const l of openListeners) l();
+}
+
+function subscribeOpen(listener: () => void) {
+  openListeners.add(listener);
+  return () => {
+    openListeners.delete(listener);
+  };
+}
+
+/** Expanded category ids; everything starts collapsed. */
+function useOpenCategories() {
+  const ids = useSyncExternalStore(subscribeOpen, readOpen, () => NONE);
+  const open = useMemo(() => new Set(ids), [ids]);
+  return {
+    open,
+    toggle: (id: string) => writeOpen(open.has(id) ? ids.filter((i) => i !== id) : [...ids, id]),
+    expand: (more: string[]) => writeOpen([...new Set([...ids, ...more])]),
+    setAll: (next: string[]) => writeOpen(next),
+  };
+}
+
 export function CategoryManager({
   categories,
   productCounts,
@@ -53,6 +113,15 @@ export function CategoryManager({
   const [error, setError] = useState<{ message: string; field?: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const flat = useMemo(() => flattenCategories(categories), [categories]);
+  const { open: openSet, toggle, expand, setAll } = useOpenCategories();
+  const rows = useMemo(() => visibleRows(flat, openSet), [flat, openSet]);
+
+  const childCount = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of categories) if (c.parent_id) counts.set(c.parent_id, (counts.get(c.parent_id) ?? 0) + 1);
+    return counts;
+  }, [categories]);
+  const parentIds = [...childCount.keys()];
 
   // Siblings in display order, to know which rows can move up or down.
   const siblingIndex = useMemo(() => {
@@ -104,6 +173,8 @@ export function CategoryManager({
         return;
       }
       toast.success("Category saved");
+      // Open the branch it was saved into, so it shows in the list.
+      if (draft.parentId) expand([draft.parentId, ...ancestorIds(categories, draft.parentId)]);
       setDraft(null);
       router.refresh();
     });
@@ -135,7 +206,17 @@ export function CategoryManager({
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        {parentIds.length > 0 && (
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setAll(parentIds)} disabled={parentIds.every((id) => openSet.has(id))}>
+              Expand all
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setAll([])} disabled={parentIds.every((id) => !openSet.has(id))}>
+              Collapse all
+            </Button>
+          </>
+        )}
         <Button onClick={() => open()}>
           <Plus className="size-4" /> Add category
         </Button>
@@ -148,14 +229,36 @@ export function CategoryManager({
           </EmptyState>
         ) : (
           <ul className="divide-y divide-line">
-            {flat.map(({ category, depth }) => {
+            {rows.map(({ category, depth }) => {
               const count = productCounts[category.id] ?? 0;
               const pos = siblingIndex.get(category.id) ?? { index: 0, size: 1 };
-              const hasChildren = categories.some((c) => c.parent_id === category.id);
+              const subCount = childCount.get(category.id) ?? 0;
+              const hasChildren = subCount > 0;
+              const expanded = openSet.has(category.id);
               return (
-                <li key={category.id} className={cn("flex items-center gap-3 py-2.5 pr-4 hover:bg-mist/50", !category.is_active && "opacity-60")}>
-                  <div className="flex flex-1 items-center gap-3" style={{ paddingLeft: 20 + depth * 28 }}>
-                    {depth > 0 && <span className="-ml-4 h-px w-3 bg-line-strong" aria-hidden />}
+                <li
+                  key={category.id}
+                  className={cn(
+                    // On narrow screens the buttons wrap onto their own line under the name.
+                    "flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5 pr-4 hover:bg-mist/50",
+                    !category.is_active && "opacity-60",
+                  )}
+                >
+                  <div className="flex min-w-0 flex-[1_1_16rem] items-center gap-2" style={{ paddingLeft: 12 + depth * 28 }}>
+                    {hasChildren ? (
+                      <button
+                        type="button"
+                        onClick={() => toggle(category.id)}
+                        aria-expanded={expanded}
+                        aria-label={`Sub-categories of ${category.name}`}
+                        title={expanded ? "Hide sub-categories" : "Show sub-categories"}
+                        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted transition hover:bg-mist hover:text-ink"
+                      >
+                        <ChevronRight className={cn("size-4 transition-transform", expanded && "rotate-90")} />
+                      </button>
+                    ) : (
+                      <span className="size-7 shrink-0" aria-hidden />
+                    )}
                     <span className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-[#f3f5f4]">
                       {category.image_url && <ProductImage src={category.image_url} alt="" sizes="40px" className="p-1" />}
                     </span>
@@ -166,6 +269,7 @@ export function CategoryManager({
                         <Link href={`/admin/products?category=${category.id}`} className="hover:text-canopy hover:underline">
                           {count} {count === 1 ? "product" : "products"}
                         </Link>
+                        {hasChildren && ` · ${subCount} ${subCount === 1 ? "sub-category" : "sub-categories"}`}
                       </p>
                     </div>
                     <div className="hidden flex-wrap gap-1.5 sm:flex">
@@ -173,7 +277,7 @@ export function CategoryManager({
                       {category.is_featured && <Pill tone="warn">On homepage</Pill>}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="ml-auto flex shrink-0 items-center gap-1">
                     <IconBtn label={`Move ${category.name} up`} onClick={() => move(category.id, "up")} disabled={pending || pos.index === 0}>
                       <ArrowUp className="size-4" />
                     </IconBtn>

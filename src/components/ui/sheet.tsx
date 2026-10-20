@@ -73,7 +73,7 @@ export function Sheet({
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
-      {footer && <div className="border-t border-line bg-white px-5 py-4">{footer}</div>}
+      {footer && <div className="border-t border-line bg-white px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4">{footer}</div>}
     </dialog>
   );
 }

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { getSupabasePublishableKey, getSupabaseUrl } from "./config";
 import type { Database } from "./database.types";
 
@@ -11,6 +12,10 @@ import type { Database } from "./database.types";
  * in Server Actions, Route Handlers, or components inside a <Suspense> boundary.
  */
 export async function createClient() {
+  // Every query checks the session token's expiry against the current time,
+  // which Next.js only allows while handling the actual request, not while
+  // preparing a prefetched page shell.
+  await connection();
   const cookieStore = await cookies();
 
   return createServerClient<Database>(getSupabaseUrl(), getSupabasePublishableKey(), {

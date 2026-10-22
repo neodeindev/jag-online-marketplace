@@ -13,10 +13,12 @@
  *
  * Demo accounts (local development only — change or delete before launch):
  *   owner     SEED_OWNER_EMAIL / SEED_OWNER_PASSWORD   (default owner@jagmarket.test)
- *   staff     staff@jagmarket.test   (orders + products)
+ *   staff     staff@jagmarket.test / SEED_STAFF_PASSWORD   (orders + products)
  *   customers ann@jagmarket.test, devon@jagmarket.test, priya@jagmarket.test,
  *             marcus@jagmarket.test, shanice@jagmarket.test
- * All demo accounts use DEMO_PASSWORD below unless SEED_OWNER_PASSWORD is set for the owner.
+ * Customers use DEMO_PASSWORD below. Set SEED_OWNER_PASSWORD and SEED_STAFF_PASSWORD
+ * whenever the database is reachable by others: this file is public, and those two
+ * accounts open the dashboard.
  */
 import { createClient } from "@supabase/supabase-js";
 
@@ -55,6 +57,7 @@ const clientOptions = { auth: { persistSession: false, autoRefreshToken: false }
 const admin = createClient(url, secret, clientOptions);
 const ownerEmail = process.env.SEED_OWNER_EMAIL || "owner@jagmarket.test";
 const ownerPassword = process.env.SEED_OWNER_PASSWORD || DEMO_PASSWORD;
+const staffPassword = process.env.SEED_STAFF_PASSWORD || DEMO_PASSWORD;
 
 // Deterministic randomness so every reset produces the same store.
 let seed = 20261019;
@@ -174,7 +177,7 @@ async function main() {
   console.log("→ Creating demo accounts");
   const ownerId = await ensureUser(ownerEmail, ownerPassword, "Store Owner", "+592 600 0000");
   must(await admin.from("profiles").update({ role: "owner", permissions: [] }).eq("id", ownerId), "promote owner");
-  const staffId = await ensureUser("staff@jagmarket.test", DEMO_PASSWORD, "Kevin Persaud", "+592 600 1111");
+  const staffId = await ensureUser("staff@jagmarket.test", staffPassword,"Kevin Persaud", "+592 600 1111");
   must(await admin.from("profiles").update({ role: "staff", permissions: ["orders", "products"] }).eq("id", staffId), "set staff");
   const customers = [
     ["ann@jagmarket.test", "Ann Williams", "+592 621 4455", "Lot 12 Lamaha Street", "Georgetown", "Georgetown"],
@@ -475,7 +478,7 @@ async function main() {
 
   console.log(`\n✔ Demo store ready: ${created.length} products, ${placed.length} orders.`);
   console.log(`  Dashboard: http://localhost:3000/admin  (${ownerEmail})`);
-  console.log("  Demo passwords are set in scripts/seed-demo.mjs (DEMO_PASSWORD) and SEED_OWNER_PASSWORD.\n");
+  console.log("  Owner and staff passwords: SEED_OWNER_PASSWORD / SEED_STAFF_PASSWORD, else DEMO_PASSWORD in scripts/seed-demo.mjs.\n");
 }
 
 main().catch((error) => {
